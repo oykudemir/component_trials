@@ -3,11 +3,6 @@ import { styled } from 'styled-components'
 
 //https://stackblitz.com/edit/multi-range-slider-typescript?file=components%2FmultiRangeSlider%2FMultiRangeSlider.tsx
 
-const SliderContainer = styled.div`
-    position: relative;
-    min-height: 50px;
-`;
-
 interface SliderProps {
   backgroundColor?: string;
   type?: 'multi' | 'single';
@@ -15,13 +10,17 @@ interface SliderProps {
   max: number;
 }
 
+
+
+
 export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderProps) => {
   const [minVal, setMinVal] = useState(min);
   const [maxVal, setMaxVal] = useState(max);
   const minValRef = useRef(min);
   const maxValRef = useRef(max);
   const range = useRef<HTMLDivElement>(null); 
-
+  const leftThumb = useRef<HTMLInputElement>(null);
+  const rightThumb = useRef<HTMLInputElement>(null);
   // Convert to percentage
   const getPercent = useCallback((value: number) =>
     Math.round(((value - min) / (max - min)) * 100), [min, max])
@@ -47,6 +46,13 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
     }
   }, [maxVal, getPercent]);
 
+  useEffect(() => {
+    if (leftThumb.current && rightThumb.current) {
+      leftThumb.current.style.left = `${getPercent(minVal)}%`;
+      rightThumb.current.style.left = `${getPercent(maxVal)}%`;
+    }
+  }, [minVal, maxVal, getPercent]);
+  
 
   const containerRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -55,21 +61,29 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
 
   const coords = useRef<{
     startX: number,
-    lastX: number
+    startY: number,
+    lastX: number,
+    lastY: number
   }>({
     startX: 0,
-    lastX: 0
+    startY: 0,
+    lastX: 0,
+    lastY: 0
   })
 
   useEffect(() => {
-    if (!boxRef.current || !containerRef.current) return;
+    if (!range.current || !containerRef.current) return;
 
-    const box = boxRef.current;
+    const box = range.current;
     const container = containerRef.current;
+
+    const containerRect = container.getBoundingClientRect();
+    const boxRect = box.getBoundingClientRect();
 
     const onMouseDown = (e: MouseEvent) => {
       isClicked.current = true;
-      coords.current.startX = e.clientX - box.offsetLeft;
+      coords.current.startX = e.clientX;
+      coords.current.lastX = boxRect.left - containerRect.left;
     }
 
     const onMouseUp = () => {
@@ -79,23 +93,32 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
     const onMouseMove = (e: MouseEvent) => {
       if (!isClicked.current) return;
 
-      const nextX = e.clientX - coords.current.startX;
+      let nextX = e.clientX - coords.current.startX + coords.current.lastX;
+
+      if (nextX < 0) {
+        nextX = 0;
+      }
+     
+      if (nextX + boxRect.width > containerRect.width) {
+        nextX = containerRect.width - boxRect.width;
+      }
       
-      // Limit the movement to horizontal axis
-      box.style.left = `${Math.max(0, Math.min(nextX, container.offsetWidth - box.offsetWidth))}px`;
+      box.style.left = `${nextX}px`;
+      console.log("nextx:"+nextX);
     }
 
     box.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mouseup', onMouseUp);
-    container.addEventListener('mousemove', onMouseMove);
-    
-    return () => {
+    document.addEventListener('mousemove', onMouseMove);
+
+    const cleanup = () => {
+      box.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('mouseup', onMouseUp);
-      container.removeEventListener('mousemove', onMouseMove);
-    };
+      document.removeEventListener('mousemove', onMouseMove);
+    }
+
+    return cleanup;
   }, [])
-
-
 
   return (
     <>
@@ -111,6 +134,7 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
                   const value = Math.min(Number(event.target.value), maxVal - 1);
                   setMinVal(value);
                   minValRef.current = value;
+                  console.log("min val = " + value);
                 }}
                 className="thumb thumb--left"
                 
@@ -124,20 +148,22 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
                   const value = Math.max(Number(event.target.value), minVal + 1);
                   setMaxVal(value);
                   maxValRef.current = value;
+                  console.log("max val = " + value);
                 }}
                 className="thumb thumb--right"
               />
               <div className="slider">
-                  <div className="slider__track"></div>
-                   <div ref={range} className="slider__range"></div>
+                  <div className="slider__track" ref={containerRef}>
+                    <div ref={range} className="slider__range" style={{ backgroundColor: backgroundColor ? backgroundColor : 'red' }}></div>
+                  </div>
                   <div className="slider__left-value">{minVal}</div>
                   <div className="slider__right-value">{maxVal}</div>
                 </div>
           </div>) 
           :
-          (<div className="container">
-              <input id="fromSlider" type="range" value="10" min="0" max="100" />
-          </div>)
+          ( <div ref={containerRef} className="cont">
+          <div ref={boxRef} className="box"></div>
+        </div>)
           
       }
     </>
