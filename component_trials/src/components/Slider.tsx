@@ -1,20 +1,45 @@
-import {useState, useRef, useEffect, useCallback, ChangeEvent} from 'react'
+import { useState, useRef, useEffect, useCallback, ChangeEvent } from 'react'
 import { styled } from 'styled-components'
+import Popover from '@mui/material/Popover';
+import Tooltip from './Tooltip';
 
 interface SliderProps {
-  backgroundColor?: string;
+  rangeColor?: string;
   type?: 'multi' | 'single';
   min: number;
   max: number;
 }
 
-export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderProps) => {
+const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, isVisible }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        backgroundColor: 'white',
+        padding: '8px',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        zIndex: 1,
+      }}
+    >
+      {value}
+    </div>
+  );
+};
+
+
+export const Slider = ({rangeColor, type = 'single', min, max }: SliderProps) => {
   const [minVal, setMinVal] = useState(min);
   const [maxVal, setMaxVal] = useState(max);
+  const [displayMin, setDisplayMin] = useState(false);
 
-  const range = useRef<HTMLDivElement>(null); 
-  const leftThumb = useRef<HTMLInputElement>(null);
-  const rightThumb = useRef<HTMLInputElement>(null);
+  const isClicked = useRef<boolean>(false);
+  const [startX, setStartX] = useState<number>(0);
+  const [offsetX, setOffsetX] = useState<number>(0);
+  const [delta, setDelta] = useState<number>(0);
+  const range = useRef<HTMLDivElement>(null);
 
   const getPercent = useCallback((value: number) =>
     Math.round(((value - min) / (max - min)) * 100), [min, max]);
@@ -39,21 +64,22 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
     }
   }, [maxVal, getPercent]);
 
-  
-  const isClicked = useRef<boolean>(false);
-  const [startX, setStartX] = useState<number>(0);
-  const [offsetX, setOffsetX] = useState<number>(0);
-  const [delta, setDelta] = useState<number>(0);
-
   useEffect(() => {
-      console.log("min: " + minVal);
-      console.log("ox: " + offsetX);
-      console.log("max:" + maxVal)
-      setMinVal(Math.max(min, min + offsetX));
-      setMaxVal(Math.min(max, maxVal + delta));
+    console.log("min: " + minVal);
+    console.log("ox: " + offsetX);
+    console.log("max:" + maxVal)
+    if(max > maxVal + delta)
+    {
+      setMinVal(min + offsetX);
+      setMaxVal(maxVal + delta);
+    }
+    else
+    {
+      setMaxVal(max);
+    }
   }, [offsetX]);
 
-  const itemRef =  range;
+  const itemRef = range;
   const parentRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -74,7 +100,7 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
       console.log(minVal)
       console.log("delta:" + delta);
 
-     }
+    }
   };
 
   const handleMouseUp = () => {
@@ -82,8 +108,8 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
   };
 
   useEffect(() => {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
@@ -98,48 +124,62 @@ export const Slider = ({ backgroundColor, type = 'single', min, max }: SliderPro
       {
         type && type === 'multi' ?
           (<div className="container">
+           {/* <div>
+               {
+                displayMin ? 
+                <div>
+                  haha
+                
+                </div>
+                : <></>
+              }      */}       
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+              <Tooltip text="Simple tooltip">
               <input
                 type="range"
                 min={min}
                 max={max}
                 value={minVal}
-                ref={leftThumb}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => { 
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   const value = Math.min(Number(event.target.value), maxVal - 1);
                   setMinVal(value);
                   console.log("min val = " + value);
                 }}
                 className="thumb thumb--left"
-                
+                onMouseOver={()=>{console.log("ahah"); setDisplayMin(true)}}
+                onMouseOut={()=>setDisplayMin(false)}
               />
-              <input
-                type="range"
-                min={min}
-                max={max}
-                value={maxVal}
-                ref={rightThumb}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {  
-                  const value = Math.max(Number(event.target.value), minVal + 1);
-                  setMaxVal(value);
-                  console.log("max val = " + value);
-                }}
-                className="thumb thumb--right"
-              />
-              <div className="slider">
-                  <div className="slider__track" ref={parentRef}>
-                    <div ref={range} className="slider__range" style={{  left: `${leftPercentage}%`,
-                     cursor: isClicked ? 'grabbing' : 'grab',backgroundColor: backgroundColor ? backgroundColor : 'red' }}         onMouseDown={handleMouseDown}
-                     ></div>
-                  </div>
-                  <div className="slider__left-value">{minVal}</div>
-                  <div className="slider__right-value">{maxVal}</div>
-                </div>
-          </div>) 
+              </Tooltip></div>
+{/*             </div>
+ */}            <input
+              type="range"
+              min={min}
+              max={max}
+              value={maxVal}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                const value = Math.max(Number(event.target.value), minVal + 1);
+                setMaxVal(value);
+                console.log("max val = " + value);
+              }}
+              className="thumb thumb--right"
+            />
+            <div className="slider">
+              <div className="slider__track" ref={parentRef}>
+                <div ref={range} className="slider__range" style={{
+                  left: `${leftPercentage}%`,
+                  cursor: isClicked ? 'grabbing' : 'grab', backgroundColor: rangeColor ? rangeColor : 'red'
+                }} onMouseDown={handleMouseDown}
+                ></div>
+              </div>
+              <div className="slider__left-value">{minVal}</div>
+              <div className="slider__right-value">{maxVal}</div>
+            </div>
+          </div>)
           :
-          ( <div /* ref={containerRef}  */className="cont">
-          <div /* ref={boxRef}*/ className="box"></div>
-        </div>)
-          
+          (<div className="cont">
+            <input type="range" />
+          </div>)
+
       }
     </>
 
