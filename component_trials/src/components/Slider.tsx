@@ -26,6 +26,7 @@ const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, i
   );
 };
 
+//https://codesandbox.io/p/sandbox/react-range-slider-zzxvl7z6px?file=%2Fsrc%2FRangeSlider%2FHandle%2FHandle.js%3A57%2C1-58%2C1
 
 export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) => {
 
