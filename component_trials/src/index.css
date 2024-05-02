@@ -5,9 +5,19 @@
   justify-content: center;
 }
 
+
 .slider {
   position: relative;
   width: 200px;
+}
+
+
+input[type="range" i] {
+  cursor: default;
+  color: rgb(157, 150, 142);
+  padding: initial;
+  border: initial;
+  margin: 0px;
 }
 
 .slider__track,
@@ -155,4 +165,16 @@
   margin-top: 4px;
   pointer-events: all;
   position: relative;
+}
+
+/* Adjust the thumb's horizontal position */
+.thumb::-webkit-slider-thumb,
+.thumb::-moz-range-thumb {
+  transform: translateX(-50%); /* Center the thumb */
+}
+
+/* Adjust the initial positioning of the left value if it affects thumb */
+.slider__left-value {
+  left: 0; /* Align exactly with the track start */
+  transform: translateX(-50%); /* Center the label on the thumb */
 }

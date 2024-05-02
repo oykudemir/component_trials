@@ -3,6 +3,9 @@ import Slider from '../components/Slider';
 import '../index.css'
 
 const meta: Meta<typeof Slider> = {
+  parameters: {
+    layout: 'centered',
+  },
   component: Slider,
 };
 
@@ -15,7 +18,13 @@ type Story = StoryObj<typeof Slider>;
  * to learn how to use render functions.
  */
 export const Multi: Story = {
-  render: () => <Slider type='multi' min={100} max={280} rangeColor='blue'/>  ,
+  args: {
+    type: 'multi',
+    min: 100,
+    max: 280,
+    rangeColor: 'blue'
+  }
+
 };
 
 export const Single: Story = {

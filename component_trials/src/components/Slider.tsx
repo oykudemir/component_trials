@@ -6,7 +6,11 @@ interface SliderProps {
   min: number;
   max: number;
 }
-
+/*
+  customize handles (wrap inputs inside custom component)
+  think of min-max-step optimalizations
+  sometimes dragging event prevents thumb movement
+*/
 const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, isVisible }) => {
   if (!isVisible) return null;
 
@@ -26,85 +30,61 @@ const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, i
   );
 };
 
-//https://codesandbox.io/p/sandbox/react-range-slider-zzxvl7z6px?file=%2Fsrc%2FRangeSlider%2FHandle%2FHandle.js%3A57%2C1-58%2C1
-
 export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) => {
 
   //min and max values of range
   const [minVal, setMinVal] = useState(min);
   const [maxVal, setMaxVal] = useState(max);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const rangeRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [showMin, setShowMin] = useState(false);
 
-  const isClicked = useRef<boolean>(false);
-  const [startX, setStartX] = useState<number>(0);
-  const [offsetX, setOffsetX] = useState<number>(0);
-  const [delta, setDelta] = useState<number>(0);
-  const range = useRef<HTMLDivElement>(null);
+  const getPercent = useCallback((value: number) => ((value - min) / (max - min)) * 100, [min, max]);
 
-  const getPercent = useCallback((value: number) =>
-    Math.round(((value - min) / (max - min)) * 100), [min, max]);
-
-  //if minval changes, change left and width according to it
-  useEffect(() => {
-    const minPercent = getPercent(minVal);
-    const maxPercent = getPercent(maxVal);
-
-    if (range.current) {
-      range.current.style.left = `${minPercent}%`;
-      range.current.style.width = `${maxPercent - minPercent}%`;
+  const updateRangeStyle = () => {
+    if (rangeRef.current) {
+      const minPercent = getPercent(minVal);
+      const maxPercent = getPercent(maxVal);
+      rangeRef.current.style.left = `${minPercent}%`;
+      rangeRef.current.style.width = `${maxPercent - minPercent}%`;
     }
-  }, [minVal, getPercent]);
+  };
 
-  //if maxval changes, change left and width according to it (left won't change?)
   useEffect(() => {
-    const minPercent = getPercent(minVal);
-    const maxPercent = getPercent(maxVal);
+    updateRangeStyle();
+  }, [minVal, maxVal]);
 
-    if (range.current) {
-      range.current.style.left = `${minPercent}%`;
-      range.current.style.width = `${maxPercent - minPercent}%`;
-    }
-  }, [maxVal, getPercent]);
 
- //if x axis changes (we move the range), change min and maxval according to it 
-  useEffect(() => {
-  console.log("min: " + minVal);
-    console.log("ox: " + offsetX);
-    console.log("max:" + maxVal)
-    if (max > maxVal + delta) {
-      setMinVal(min + offsetX);
-      setMaxVal(maxVal + delta);
-    }
-    else {
-      setMaxVal(max);
-    } 
-  }, [offsetX]);
-
-  const itemRef = range;
-  const parentRef = useRef<HTMLDivElement>(null);
-  const leftThumb = useRef<HTMLInputElement>(null);
-  const rightThumb = useRef<HTMLInputElement>(null);
-
-  //on click to range, startx holds the location of the mouse
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    isClicked.current = true;
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
     setStartX(e.clientX);
-    console.log("start x:" + e.clientX);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (isClicked.current && itemRef.current && parentRef.current) {
-      const parentWidth = parentRef.current.clientWidth;
-      const itemWidth = itemRef.current.clientWidth;
-      const maxOffsetX = parentWidth - itemWidth;
-      const newOffsetX = Math.max(0, Math.min(maxOffsetX, offsetX + e.clientX - startX));
-      setDelta(newOffsetX - offsetX); // Calculate the change in offset
-      setOffsetX(newOffsetX);
-      setStartX(e.clientX);
+    if (isDragging && rangeRef.current && trackRef.current) {
+      const dx = e.clientX - startX;
+      const trackWidth = trackRef.current.clientWidth;
+      const newMin = Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min))));
+      const newMax = newMin + (maxVal - minVal);
+
+      if (newMax <= max && newMin >= min) {
+        setMinVal(newMin);
+        setMaxVal(newMax);
+        setStartX(e.clientX);
+      }
+      if(newMax < newMin)
+      {
+        setMinVal(newMax);
+        setMaxVal(newMin);
+        setStartX(e.clientX);
+      }
     }
   };
 
   const handleMouseUp = () => {
-    isClicked.current = false;
+    setIsDragging(false);
   };
 
   useEffect(() => {
@@ -115,59 +95,82 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isClicked, offsetX]);
-
-  const leftPercentage = parentRef.current ? ((offsetX / parentRef.current.clientWidth) * 100) : 0;
+  }, [handleMouseMove, handleMouseUp]);
 
   return (
     <>
-      {
-        type && type === 'multi' ?
-          (<div className="container">
-            <input
-              type="range"
-              min={min}
-              
-              
-              max={max}
-              value={minVal}
-              ref={leftThumb}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                const value = Math.min(Number(event.target.value), maxVal - 1);
-                setMinVal(value);
-              }}
-              className="thumb thumb--left"
-              onMouseOver={() => {}}
-            />
-            <input
-              type="range"
-              min={min}
-              max={max}
-              value={maxVal}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                const value = Math.max(Number(event.target.value), minVal + 1);
-                setMaxVal(value);
-              }}
-              className="thumb thumb--right"
-            />
-            <div className="slider">
-              <div className="slider__track" ref={parentRef}>
-                <div ref={range} className="slider__range" style={{
-                  left: `${leftPercentage}%`,
-                  cursor: isClicked ? 'grabbing' : 'grab', backgroundColor: rangeColor ? rangeColor : 'red'
-                }} onMouseDown={handleMouseDown}
-                ></div>
-              </div>
-              <div className="slider__left-value">{minVal}</div>
-              <div className="slider__right-value">{maxVal}</div>
-            </div>
-          </div>)
-          :
-          (<div className="cont">
-            <input type="range" />
-          </div>)
+     <div className="slider-container">
+      {type === 'multi' ? (
+        <div className='cont'>
+{/*          { isDragging ? <p>hiiii</p> : <></>}
+ */}        <div className="slider" ref={trackRef}>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            value={minVal}
 
-      }
+            onChange={(e) => 
+              {const val = Math.round(Number(e.target.value));
+                if(val >= maxVal)
+                {
+                  setMinVal(maxVal);
+                  setMaxVal(val);
+                }
+                else
+                {
+                  setMinVal(val);
+                }
+                console.log("min: " + minVal);
+                console.log("max: " + maxVal);
+
+              }
+            }
+            className="thumb thumb--left"
+          />
+          <input
+            type="range"
+            min={min}
+            max={max}
+            value={maxVal}
+            onChange={(e) => 
+              {const val = Math.round(Number(e.target.value));
+                if(val <= minVal)
+                {
+                  setMaxVal(minVal);
+                  setMinVal(val);
+                }
+                else
+                {
+                  setMaxVal(val);
+                }
+              }
+            }
+            className="thumb thumb--right"
+          />
+          <div className="slider__track">
+            <div
+              ref={rangeRef}
+              className="slider__range"
+              style={{ cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: rangeColor || 'red' }}
+              onMouseDown={handleMouseDown}
+            ></div>
+          </div>
+          <div className="slider__left-value">{Math.round(minVal)}</div>
+          <div className="slider__right-value">{Math.round(maxVal)}</div>
+        </div>
+        </div>
+      )
+      : 
+      ( <input
+        type="range"
+        min={min}
+        max={max}
+        step={30}
+        value={minVal}
+        onChange={(e) => setMinVal(Math.round(Number(e.target.value)))}
+      />)}
+    </div>
     </>
 
   )
