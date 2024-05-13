@@ -13,7 +13,7 @@
 
 
 input[type="range" i] {
-  cursor: default;
+  cursor: pointer;
   color: rgb(157, 150, 142);
   padding: initial;
   border: initial;

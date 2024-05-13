@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, ChangeEvent } from 'react'
+import styled from 'styled-components';
 
 interface SliderProps {
   rangeColor?: string;
@@ -10,7 +11,23 @@ interface SliderProps {
   customize handles (wrap inputs inside custom component)
   think of min-max-step optimalizations
   sometimes dragging event prevents thumb movement
+  add onchange as a prop to help view current value
 */
+
+const Thumb = styled.div`
+  position: absolute;
+  margin-top: 2px;
+  transform: translateY(-50%);
+  background-color: #f1f5f7;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 0 1px 1px #ced4da;
+  cursor: pointer;
+  height: 18px;
+  width: 18px;
+  z-index: 3;
+  margin-left: -1px;
+`;
 const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, isVisible }) => {
   if (!isVisible) return null;
 
@@ -22,7 +39,7 @@ const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, i
         padding: '8px',
         border: '1px solid #ccc',
         borderRadius: '4px',
-        zIndex: 1,
+        zIndex: 3,
       }}
     >
       {value}
@@ -36,19 +53,26 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   const [minVal, setMinVal] = useState(min);
   const [maxVal, setMaxVal] = useState(max);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingLeftThumb, setIsDraggingLeftThumb] = useState(false);
   const [startX, setStartX] = useState(0);
+  const [startXLeft, setStartXLeft] = useState(0);
   const rangeRef = useRef<HTMLDivElement>(null);
+  const leftThumbRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [showMin, setShowMin] = useState(false);
 
   const getPercent = useCallback((value: number) => ((value - min) / (max - min)) * 100, [min, max]);
 
   const updateRangeStyle = () => {
+    const minPercent = getPercent(minVal);
+    const maxPercent = getPercent(maxVal);
     if (rangeRef.current) {
-      const minPercent = getPercent(minVal);
-      const maxPercent = getPercent(maxVal);
       rangeRef.current.style.left = `${minPercent}%`;
       rangeRef.current.style.width = `${maxPercent - minPercent}%`;
+    }
+    if(leftThumbRef.current)
+    {
+      leftThumbRef.current.style.left = `${minPercent}%`;
     }
   };
 
@@ -60,10 +84,19 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartX(e.clientX);
+    console.log("you clicked range")
+  };
+
+  const handleMouseDownLeftThumb = (e: React.MouseEvent) => {
+    setIsDraggingLeftThumb(true);
+    setStartXLeft(e.clientX);
+    console.log("you clicked left thumb")
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging && rangeRef.current && trackRef.current) {
+      console.log("you moved range")
+
       const dx = e.clientX - startX;
       const trackWidth = trackRef.current.clientWidth;
       const newMin = Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min))));
@@ -83,33 +116,56 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
     }
   };
 
+  const handleMouseMoveLeftThumb = (e: MouseEvent) => {
+    if (isDraggingLeftThumb && leftThumbRef.current && trackRef.current) {
+      console.log("you moved range with me")
+
+      const dx = e.clientX - startXLeft;
+      const trackWidth = trackRef.current.clientWidth;
+      const newMin = Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min))));
+      setMinVal(newMin);
+      setStartXLeft(e.clientX);
+    }
+  };
+
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  const handleMouseUpLeftThumb = () => {
+    setIsDraggingLeftThumb(false);
   };
 
   useEffect(() => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMoveLeftThumb);
+    document.addEventListener('mouseup', handleMouseUpLeftThumb);
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMoveLeftThumb);
+      document.removeEventListener('mouseup', handleMouseUpLeftThumb);
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, [handleMouseMove, handleMouseUp, handleMouseMoveLeftThumb, handleMouseUpLeftThumb]);
 
   return (
+  
+  
     <>
      <div className="slider-container">
       {type === 'multi' ? (
         <div className='cont'>
-{/*          { isDragging ? <p>hiiii</p> : <></>}
- */}        <div className="slider" ref={trackRef}>
-          <input
+        
+        
+        <div className="slider" ref={trackRef}>
+        {/*  <input
             type="range"
             min={min}
             max={max}
             value={minVal}
-
+            onMouseDown={()=>setIsDragging(false)}
             onChange={(e) => 
               {const val = Math.round(Number(e.target.value));
                 if(val >= maxVal)
@@ -127,8 +183,9 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
               }
             }
             className="thumb thumb--left"
-          />
-          <input
+          /> */}
+         <Thumb ref={leftThumbRef} onMouseDown={handleMouseDownLeftThumb}/>
+        <input
             type="range"
             min={min}
             max={max}
@@ -146,8 +203,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
                 }
               }
             }
-            className="thumb thumb--right"
-          />
+           className="thumb thumb--right"
+          /> 
           <div className="slider__track">
             <div
               ref={rangeRef}
