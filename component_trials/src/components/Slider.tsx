@@ -28,24 +28,7 @@ const Thumb = styled.div`
   z-index: 3;
   margin-left: -1px;
 `;
-const CustomPopup: React.FC<{ value: number, isVisible: boolean }> = ({ value, isVisible }) => {
-  if (!isVisible) return null;
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        backgroundColor: 'white',
-        padding: '8px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-        zIndex: 3,
-      }}
-    >
-      {value}
-    </div>
-  );
-};
 
 export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) => {
 
@@ -85,6 +68,18 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
         leftThumbRef.current.style.left = `${minPercent}%`;
       }
     }
+    if(rightThumbRef.current)
+      {
+        const thumbWidth = rightThumbRef.current.offsetWidth; 
+        if(maxVal > max - thumbWidth/2)
+        {
+          rightThumbRef.current.style.left = `${ getPercent(maxVal - thumbWidth/2)}%`;
+        }
+        else
+        {
+          rightThumbRef.current.style.left = `${maxPercent}%`;
+        }
+      }
   };
 
   useEffect(() => {
@@ -162,25 +157,17 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
 
   const handleMouseMoveRightThumb = (e: MouseEvent) => {
     if (isDraggingRightThumb && rightThumbRef.current && trackRef.current) {
-      console.log("you moved range with me")
-
+      console.log("you moved range with me");
+  
       const dx = e.clientX - startXRight;
       const trackWidth = trackRef.current.clientWidth;
-      const thumbWidth = rightThumbRef.current.offsetWidth;  // Get the width of the thumb
-      const newMin = Math.round(Math.max(min, Math.min(max, minVal + (dx / trackWidth) * (max - min))));
-      if(newMin > maxVal)
-        {
-          setMinVal(maxVal);
-          setMaxVal(newMin);
-        }
-        else
-        {
-          setMinVal(newMin);
-        }
-      
-      console.log(e.clientX);
-      console.log("new min:" + newMin);
+      const newMax = Math.round(Math.min(max, Math.max(minVal, maxVal + (dx / trackWidth) * (max - min))));
+  
+      setMaxVal(newMax); // Directly update the maxVal
       setStartXRight(e.clientX);
+  
+      console.log(e.clientX);
+      console.log("new max:" + newMax);
     }
   };
 
@@ -222,7 +209,6 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
      <div className="slider-container">
       {type === 'multi' ? (
         <div className='cont'>
-        
         
         <div className="slider" ref={trackRef}>
         {/*  <input
