@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, ChangeEvent } from 'react'
+import React, { useState, useRef, useEffect, useCallback, forwardRef } from 'react'
 import styled from 'styled-components';
 
 interface SliderProps {
@@ -14,7 +14,12 @@ interface SliderProps {
   add onchange as a prop to help view current value
 */
 
-const Thumb = styled.div`
+interface ThumbProps {
+  onMouseDown?: React.MouseEventHandler;
+  val?: 'min' | 'max';
+}
+
+const Handle = styled.div`
   position: absolute;
   margin-top: 2px;
   transform: translateY(-50%);
@@ -29,6 +34,42 @@ const Thumb = styled.div`
   margin-left: -1px;
 `;
 
+const Tooltip = styled.div`
+  position: absolute;
+  bottom: 25px; /* Adjust based on your design */
+  transform: translateY(-50%);
+  background-color: black;
+  color: white;
+  padding: 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+`;
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Thumb = forwardRef<HTMLDivElement, ThumbProps>(({ onMouseDown, val }, ref) => {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  /* useEffect(() => {
+    if (tooltipRef.current) {
+      tooltipRef.current.style.left = `${ref?.current?.style.left}%`;
+    }
+  }, []); */
+
+  return (
+
+/*     <Wrapper>
+      <Tooltip ref={ref}>aaa</Tooltip> */
+      <Handle ref={ref} onMouseDown={onMouseDown} />
+/*     </Wrapper>
+ */  )
+});
+
+
 
 export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) => {
 
@@ -36,16 +77,18 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   const [minVal, setMinVal] = useState(min);
   const [maxVal, setMaxVal] = useState(max);
   const [isDragging, setIsDragging] = useState(false);
-  const [isDraggingLeftThumb, setIsDraggingLeftThumb] = useState(false);  
+  const [isDraggingLeftThumb, setIsDraggingLeftThumb] = useState(false);
   const [isDraggingRightThumb, setIsDraggingRightThumb] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startXLeft, setStartXLeft] = useState(0);
   const [startXRight, setStartXRight] = useState(0);
   const rangeRef = useRef<HTMLDivElement>(null);
-  const leftThumbRef = useRef<HTMLDivElement>(null);  
+  const leftThumbRef = useRef<HTMLDivElement>(null);
   const rightThumbRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [showMin, setShowMin] = useState(false);
+
 
   const getPercent = useCallback((value: number) => ((value - min) / (max - min)) * 100, [min, max]);
 
@@ -56,30 +99,24 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
       rangeRef.current.style.left = `${minPercent}%`;
       rangeRef.current.style.width = `${maxPercent - minPercent}%`;
     }
-    if(leftThumbRef.current)
-    {
-      const thumbWidth = leftThumbRef.current.offsetWidth; 
-      if(minVal > max - thumbWidth/2)
-      {
-        leftThumbRef.current.style.left = `${ getPercent(minVal - thumbWidth/2)}%`;
+    if (leftThumbRef.current) {
+      const thumbWidth = leftThumbRef.current.offsetWidth;
+      if (minVal > max - thumbWidth / 2) {
+        leftThumbRef.current.style.left = `${getPercent(minVal - thumbWidth / 2)}%`;
       }
-      else
-      {
+      else {
         leftThumbRef.current.style.left = `${minPercent}%`;
       }
     }
-    if(rightThumbRef.current)
-      {
-        const thumbWidth = rightThumbRef.current.offsetWidth; 
-        if(maxVal > max - thumbWidth/2)
-        {
-          rightThumbRef.current.style.left = `${ getPercent(maxVal - thumbWidth/2)}%`;
-        }
-        else
-        {
-          rightThumbRef.current.style.left = `${maxPercent}%`;
-        }
+    if (rightThumbRef.current) {
+      const thumbWidth = rightThumbRef.current.offsetWidth;
+      if (maxVal > max - thumbWidth / 2) {
+        rightThumbRef.current.style.left = `${getPercent(maxVal - thumbWidth / 2)}%`;
       }
+      else {
+        rightThumbRef.current.style.left = `${maxPercent}%`;
+      }
+    }
   };
 
   useEffect(() => {
@@ -87,6 +124,13 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
     console.log("min: " + minVal);
     console.log("max" + maxVal);
   }, [minVal, maxVal]);
+
+  useEffect(() => {
+    if (leftThumbRef.current && tooltipRef.current) {
+      tooltipRef.current.style.left = `${leftThumbRef.current.style.left}%`;
+    }
+  }, []);
+
 
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -113,7 +157,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
 
       const dx = e.clientX - startX;
       const trackWidth = trackRef.current.clientWidth;
-      const newMin = Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min))));
+      const newMin = Math.round(Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min)))));
       const newMax = newMin + (maxVal - minVal);
 
       if (newMax <= max && newMin >= min) {
@@ -121,8 +165,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
         setMaxVal(newMax);
         setStartX(e.clientX);
       }
-      if(newMax < newMin)
-      {
+      if (newMax < newMin) {
         setMinVal(newMax);
         setMaxVal(newMin);
         setStartX(e.clientX);
@@ -138,16 +181,13 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
       const trackWidth = trackRef.current.clientWidth;
       const thumbWidth = leftThumbRef.current.offsetWidth;  // Get the width of the thumb
       const newMin = Math.round(Math.max(min, Math.min(max, minVal + (dx / trackWidth) * (max - min))));
-      if(newMin > maxVal)
-        {
-          setMinVal(maxVal);
-          setMaxVal(newMin);
-        }
-        else
-        {
-          setMinVal(newMin);
-        }
-      
+      if (newMin > maxVal) {
+        setMinVal(maxVal);
+      }
+      else {
+        setMinVal(newMin);
+      }
+
       console.log(e.clientX);
       console.log("new min:" + newMin);
       setStartXLeft(e.clientX);
@@ -158,14 +198,24 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   const handleMouseMoveRightThumb = (e: MouseEvent) => {
     if (isDraggingRightThumb && rightThumbRef.current && trackRef.current) {
       console.log("you moved range with me");
-  
+
       const dx = e.clientX - startXRight;
       const trackWidth = trackRef.current.clientWidth;
       const newMax = Math.round(Math.min(max, Math.max(minVal, maxVal + (dx / trackWidth) * (max - min))));
-  
+
+      /*       if(newMax > maxVal)
+              {
+                setMinVal(maxVal);
+                setMaxVal(newMin);
+              }
+              else
+              {
+                setMaxVal(newMax); // Directly update the maxVal
+              } */
       setMaxVal(newMax); // Directly update the maxVal
+
       setStartXRight(e.clientX);
-  
+
       console.log(e.clientX);
       console.log("new max:" + newMax);
     }
@@ -203,15 +253,15 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   }, [handleMouseMove, handleMouseUp, handleMouseMoveLeftThumb, handleMouseUpLeftThumb, handleMouseMoveRightThumb, handleMouseUpRightThumb]);
 
   return (
-  
-  
+
+
     <>
-     <div className="slider-container">
-      {type === 'multi' ? (
-        <div className='cont'>
-        
-        <div className="slider" ref={trackRef}>
-        {/*  <input
+      <div className="slider-container">
+        {type === 'multi' ? (
+          <div className='cont'>
+
+            <div className="slider" ref={trackRef}>
+              {/*  <input
             type="range"
             min={min}
             max={max}
@@ -235,8 +285,9 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
             }
             className="thumb thumb--left"
           /> */}
-         <Thumb ref={leftThumbRef} onMouseDown={handleMouseDownLeftThumb}/>
-        {/* <input
+          <Tooltip ref={tooltipRef}></Tooltip>
+              <Thumb ref={leftThumbRef} onMouseDown={handleMouseDownLeftThumb} />
+              {/* <input
             type="range"
             min={min}
             max={max}
@@ -256,30 +307,30 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
             }
            className="thumb thumb--right"
           />  */}
-          <Thumb ref={rightThumbRef} onMouseDown={handleMouseDownRightThumb}/>
-          <div className="slider__track">
-            <div
-              ref={rangeRef}
-              className="slider__range"
-              style={{ cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: rangeColor || 'red' }}
-              onMouseDown={handleMouseDown}
-            ></div>
+              <Thumb ref={rightThumbRef} onMouseDown={handleMouseDownRightThumb} />
+              <div className="slider__track">
+                <div
+                  ref={rangeRef}
+                  className="slider__range"
+                  style={{ cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: rangeColor || 'red' }}
+                  onMouseDown={handleMouseDown}
+                ></div>
+              </div>
+              <div className="slider__left-value">{Math.round(minVal)}</div>
+              <div className="slider__right-value">{Math.round(maxVal)}</div>
+            </div>
           </div>
-          <div className="slider__left-value">{Math.round(minVal)}</div>
-          <div className="slider__right-value">{Math.round(maxVal)}</div>
-        </div>
-        </div>
-      )
-      : 
-      ( <input
-        type="range"
-        min={min}
-        max={max}
-        step={30}
-        value={minVal}
-        onChange={(e) => setMinVal(Math.round(Number(e.target.value)))}
-      />)}
-    </div>
+        )
+          :
+          (<input
+            type="range"
+            min={min}
+            max={max}
+            step={30}
+            value={minVal}
+            onChange={(e) => setMinVal(Math.round(Number(e.target.value)))}
+          />)}
+      </div>
     </>
 
   )
