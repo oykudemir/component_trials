@@ -7,6 +7,7 @@ interface SliderProps {
   min: number;
   max: number;
 }
+
 /*
   customize handles (wrap inputs inside custom component)
   think of min-max-step optimalizations
@@ -15,8 +16,14 @@ interface SliderProps {
 */
 
 interface ThumbProps {
-  onMouseDown?: React.MouseEventHandler;
-  val?: 'min' | 'max';
+  onMouseDown: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  onMouseUp: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  displayValue: number;
+  showTooltip: boolean;
+  refs: {
+    handleRef: React.RefObject<HTMLDivElement>;
+    tooltipRef: React.RefObject<HTMLDivElement>;
+  };
 }
 
 const Handle = styled.div`
@@ -36,37 +43,29 @@ const Handle = styled.div`
 
 const Tooltip = styled.div`
   position: absolute;
-  bottom: 25px; /* Adjust based on your design */
-  transform: translateY(-50%);
+  bottom: 20px;
+  transform: translateX(-50%);
   background-color: black;
   color: white;
   padding: 5px;
   border-radius: 3px;
   font-size: 12px;
   white-space: nowrap;
+  visibility: hidden;
+  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
 `;
 
-const Wrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const Thumb = forwardRef<HTMLDivElement, ThumbProps>(({ onMouseDown, val }, ref) => {
-  const tooltipRef = useRef<HTMLDivElement>(null);
-
-  /* useEffect(() => {
-    if (tooltipRef.current) {
-      tooltipRef.current.style.left = `${ref?.current?.style.left}%`;
-    }
-  }, []); */
+const Thumb: React.FC<ThumbProps> =(({refs, onMouseDown, onMouseUp, displayValue, showTooltip }) => {
 
   return (
 
-/*     <Wrapper>
-      <Tooltip ref={ref}>aaa</Tooltip> */
-      <Handle ref={ref} onMouseDown={onMouseDown} />
-/*     </Wrapper>
- */  )
+  <div>
+    <Handle onMouseDown={onMouseDown} onMouseUp={onMouseUp} ref={refs.handleRef}/>
+    <Tooltip style={{ visibility: showTooltip ? 'visible' : 'hidden' }} ref={refs.tooltipRef}>
+      {displayValue}
+    </Tooltip>
+  </div>  
+  )
 });
 
 
@@ -85,10 +84,12 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   const rangeRef = useRef<HTMLDivElement>(null);
   const leftThumbRef = useRef<HTMLDivElement>(null);
   const rightThumbRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const leftTooltipRef = useRef<HTMLDivElement>(null);
+  const rightTooltipRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [showMin, setShowMin] = useState(false);
-
+  const [showLeftTooltip, setShowLeftTooltip] = useState(false);
+  const [showRightTooltip, setShowRightTooltip] = useState(false);
 
   const getPercent = useCallback((value: number) => ((value - min) / (max - min)) * 100, [min, max]);
 
@@ -101,21 +102,31 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
     }
     if (leftThumbRef.current) {
       const thumbWidth = leftThumbRef.current.offsetWidth;
-      if (minVal > max - thumbWidth / 2) {
+/*       if (minVal > max - thumbWidth / 2) {
         leftThumbRef.current.style.left = `${getPercent(minVal - thumbWidth / 2)}%`;
       }
-      else {
-        leftThumbRef.current.style.left = `${minPercent}%`;
-      }
+      else { */
+        leftThumbRef.current.style.left = `${getPercent(minVal - thumbWidth / 2)}%`;
+/*       }
+ */    
+    if(leftTooltipRef.current)
+      {
+        leftTooltipRef.current.style.left = `${getPercent(minVal)}%`;
+      }  
     }
     if (rightThumbRef.current) {
       const thumbWidth = rightThumbRef.current.offsetWidth;
-      if (maxVal > max - thumbWidth / 2) {
+      /* if (maxVal > max - thumbWidth / 2) {
         rightThumbRef.current.style.left = `${getPercent(maxVal - thumbWidth / 2)}%`;
       }
-      else {
-        rightThumbRef.current.style.left = `${maxPercent}%`;
-      }
+      else { */
+        rightThumbRef.current.style.left = `${getPercent(maxVal - thumbWidth / 2)}%`;
+/*       }
+ */  
+    if(rightTooltipRef.current)
+    {
+      rightTooltipRef.current.style.left = `${getPercent(maxVal)}%`;
+    }     
     }
   };
 
@@ -125,35 +136,46 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
     console.log("max" + maxVal);
   }, [minVal, maxVal]);
 
-  useEffect(() => {
-    if (leftThumbRef.current && tooltipRef.current) {
-      tooltipRef.current.style.left = `${leftThumbRef.current.style.left}%`;
+  const handleMouseDownTrack = (e: React.MouseEvent) => {
+    if(showLeftTooltip || showRightTooltip)
+    {
+      setShowLeftTooltip(false);
+      setShowRightTooltip(false);
     }
-  }, []);
-
-
+    setIsDraggingLeftThumb(false);
+    setIsDraggingRightThumb(false);
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
+    setIsDragging(!isDragging);
     setStartX(e.clientX);
-    console.log("you clicked range")
+    console.log("you clicked range");
+    setShowLeftTooltip(!showLeftTooltip);
+    setShowRightTooltip(!showRightTooltip);
   };
 
   const handleMouseDownLeftThumb = (e: React.MouseEvent) => {
-    setIsDraggingLeftThumb(true);
+    setIsDraggingLeftThumb(!isDraggingLeftThumb);
     setStartXLeft(e.clientX);
     console.log("you clicked left thumb")
+    setShowLeftTooltip(!showLeftTooltip);
+    setShowRightTooltip(false);
+
   };
 
   const handleMouseDownRightThumb = (e: React.MouseEvent) => {
-    setIsDraggingRightThumb(true);
+    setIsDraggingRightThumb(!isDraggingRightThumb);
     setStartXRight(e.clientX);
     console.log("you clicked right thumb")
+    setShowLeftTooltip(false);
+    setShowRightTooltip(!showRightTooltip);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging && rangeRef.current && trackRef.current) {
       console.log("you moved range")
+      setShowLeftTooltip(true);
+      setShowRightTooltip(true);
 
       const dx = e.clientX - startX;
       const trackWidth = trackRef.current.clientWidth;
@@ -191,6 +213,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
       console.log(e.clientX);
       console.log("new min:" + newMin);
       setStartXLeft(e.clientX);
+      setShowLeftTooltip(true);
+
     }
   };
 
@@ -218,20 +242,26 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
 
       console.log(e.clientX);
       console.log("new max:" + newMax);
+      setShowRightTooltip(true);
+
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setShowLeftTooltip(false);
+    setShowRightTooltip(false);
   };
 
   const handleMouseUpLeftThumb = () => {
     setIsDraggingLeftThumb(false);
+    setShowLeftTooltip(false);
   };
 
 
   const handleMouseUpRightThumb = () => {
     setIsDraggingRightThumb(false);
+    setShowRightTooltip(false);
   };
 
   useEffect(() => {
@@ -285,8 +315,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
             }
             className="thumb thumb--left"
           /> */}
-          <Tooltip ref={tooltipRef}></Tooltip>
-              <Thumb ref={leftThumbRef} onMouseDown={handleMouseDownLeftThumb} />
+              <Thumb refs={{handleRef: leftThumbRef, tooltipRef: leftTooltipRef}} onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={minVal} showTooltip={showLeftTooltip}  />
               {/* <input
             type="range"
             min={min}
@@ -307,8 +336,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
             }
            className="thumb thumb--right"
           />  */}
-              <Thumb ref={rightThumbRef} onMouseDown={handleMouseDownRightThumb} />
-              <div className="slider__track">
+              <Thumb  refs={{handleRef: rightThumbRef, tooltipRef: rightTooltipRef}} onMouseDown={handleMouseDownRightThumb} onMouseUp={handleMouseUpRightThumb} displayValue={maxVal} showTooltip={showRightTooltip} />
+              <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
                   ref={rangeRef}
                   className="slider__range"
