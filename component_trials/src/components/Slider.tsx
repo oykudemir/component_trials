@@ -18,7 +18,13 @@ interface SliderProps {
   think of min-max-step optimalizations
   sometimes dragging event prevents thumb movement
   add onchange as a prop to help view current value
-
+min max geçiş
+text highlight
++ refs -> tooltip absolute
+controlled component
+custom renderers
+tests
+publish as npm package
 */
 
 interface ThumbProps {
@@ -92,8 +98,6 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
   const rangeRef = useRef<HTMLDivElement>(null);
   const leftThumbRef = useRef<HTMLDivElement>(null);
   const rightThumbRef = useRef<HTMLDivElement>(null);
-  const leftTooltipRef = useRef<HTMLDivElement>(null);
-  const rightTooltipRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [showLeftTooltip, setShowLeftTooltip] = useState(false);
   const [showRightTooltip, setShowRightTooltip] = useState(false);
