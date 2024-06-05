@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, forwardRef } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import styled from 'styled-components';
 
 interface SliderProps {
@@ -6,6 +6,7 @@ interface SliderProps {
   type?: 'multi' | 'single';
   min: number;
   max: number;
+  step?: number;
 }
 
 /*
@@ -53,24 +54,34 @@ const Tooltip = styled.div`
   white-space: nowrap;
   visibility: hidden;
   box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: black transparent transparent transparent;
+  }
 `;
 
-const Thumb: React.FC<ThumbProps> =(({refs, onMouseDown, onMouseUp, displayValue, showTooltip }) => {
+const Thumb: React.FC<ThumbProps> = (({ refs, onMouseDown, onMouseUp, displayValue, showTooltip }) => {
 
   return (
 
-  <div>
-    <Handle onMouseDown={onMouseDown} onMouseUp={onMouseUp} ref={refs.handleRef}/>
-    <Tooltip style={{ visibility: showTooltip ? 'visible' : 'hidden' }} ref={refs.tooltipRef}>
-      {displayValue}
-    </Tooltip>
-  </div>  
+    <div>
+      <Handle onMouseDown={onMouseDown} onMouseUp={onMouseUp} ref={refs.handleRef} />
+      <Tooltip style={{ visibility: showTooltip ? 'visible' : 'hidden' }} ref={refs.tooltipRef}>
+        {displayValue}
+      </Tooltip>
+    </div>
   )
 });
 
 
 
-export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) => {
+export const Slider = ({ rangeColor, type = 'single', min, max, step = 1 }: SliderProps) => {
 
   //min and max values of range
   const [minVal, setMinVal] = useState(min);
@@ -87,7 +98,6 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   const leftTooltipRef = useRef<HTMLDivElement>(null);
   const rightTooltipRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [showMin, setShowMin] = useState(false);
   const [showLeftTooltip, setShowLeftTooltip] = useState(false);
   const [showRightTooltip, setShowRightTooltip] = useState(false);
 
@@ -97,36 +107,31 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
     const minPercent = getPercent(minVal);
     const maxPercent = getPercent(maxVal);
     if (rangeRef.current) {
-      rangeRef.current.style.left = `${minPercent}%`;
-      rangeRef.current.style.width = `${maxPercent - minPercent}%`;
+      if(type === "multi")
+      {
+        rangeRef.current.style.left = `${minPercent}%`;
+        rangeRef.current.style.width = `${maxPercent - minPercent}%`;
+      }
+      else
+      {
+        rangeRef.current.style.left = `${0}%`;
+        rangeRef.current.style.width = `${minPercent}%`;
+      }
     }
     if (leftThumbRef.current) {
-      const thumbWidth = leftThumbRef.current.offsetWidth;
-/*       if (minVal > max - thumbWidth / 2) {
-        leftThumbRef.current.style.left = `${getPercent(minVal - thumbWidth / 2)}%`;
-      }
-      else { */
-        leftThumbRef.current.style.left = `${getPercent(minVal - thumbWidth / 2)}%`;
-/*       }
- */    
-    if(leftTooltipRef.current)
-      {
+      leftThumbRef.current.style.left = `${getPercent(minVal)}%`;
+      leftThumbRef.current.style.transform = 'translate(-50%, -50%)';
+
+      if (leftTooltipRef.current) {
         leftTooltipRef.current.style.left = `${getPercent(minVal)}%`;
-      }  
+      }
     }
     if (rightThumbRef.current) {
-      const thumbWidth = rightThumbRef.current.offsetWidth;
-      /* if (maxVal > max - thumbWidth / 2) {
-        rightThumbRef.current.style.left = `${getPercent(maxVal - thumbWidth / 2)}%`;
+      rightThumbRef.current.style.left = `${getPercent(maxVal)}%`;
+      rightThumbRef.current.style.transform = 'translate(-50%, -50%)';
+      if (rightTooltipRef.current) {
+        rightTooltipRef.current.style.left = `${getPercent(maxVal)}%`;
       }
-      else { */
-        rightThumbRef.current.style.left = `${getPercent(maxVal - thumbWidth / 2)}%`;
-/*       }
- */  
-    if(rightTooltipRef.current)
-    {
-      rightTooltipRef.current.style.left = `${getPercent(maxVal)}%`;
-    }     
     }
   };
 
@@ -136,9 +141,9 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
     console.log("max" + maxVal);
   }, [minVal, maxVal]);
 
+
   const handleMouseDownTrack = (e: React.MouseEvent) => {
-    if(showLeftTooltip || showRightTooltip)
-    {
+    if (showLeftTooltip || showRightTooltip) {
       setShowLeftTooltip(false);
       setShowRightTooltip(false);
     }
@@ -155,7 +160,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   };
 
   const handleMouseDownLeftThumb = (e: React.MouseEvent) => {
-    setIsDraggingLeftThumb(!isDraggingLeftThumb);
+    e.stopPropagation();
+    setIsDraggingLeftThumb(true);
     setStartXLeft(e.clientX);
     console.log("you clicked left thumb")
     setShowLeftTooltip(!showLeftTooltip);
@@ -164,7 +170,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   };
 
   const handleMouseDownRightThumb = (e: React.MouseEvent) => {
-    setIsDraggingRightThumb(!isDraggingRightThumb);
+    e.stopPropagation();
+    setIsDraggingRightThumb(true);
     setStartXRight(e.clientX);
     console.log("you clicked right thumb")
     setShowLeftTooltip(false);
@@ -181,16 +188,32 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
       const trackWidth = trackRef.current.clientWidth;
       const newMin = Math.round(Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min)))));
       const newMax = newMin + (maxVal - minVal);
+      if (step) {
+        const steppedMin = Math.round(newMin / step) * step;
+        const steppedMax = Math.round(newMax / step) * step;
 
-      if (newMax <= max && newMin >= min) {
-        setMinVal(newMin);
-        setMaxVal(newMax);
-        setStartX(e.clientX);
+        if (steppedMax <= max && steppedMin >= min) {
+          setMinVal(steppedMin);
+          setMaxVal(steppedMax);
+          setStartX(e.clientX);
+        }
+        if (steppedMax < steppedMin) {
+          setMinVal(steppedMax);
+          setMaxVal(steppedMin);
+          setStartX(e.clientX);
+        }
       }
-      if (newMax < newMin) {
-        setMinVal(newMax);
-        setMaxVal(newMin);
-        setStartX(e.clientX);
+      else{
+        if (newMax <= max && newMin >= min) {
+          setMinVal(newMin);
+          setMaxVal(newMax);
+          setStartX(e.clientX);
+        }
+        if (newMax < newMin) {
+          setMinVal(newMax);
+          setMaxVal(newMin);
+          setStartX(e.clientX);
+        }
       }
     }
   };
@@ -201,13 +224,24 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
 
       const dx = e.clientX - startXLeft;
       const trackWidth = trackRef.current.clientWidth;
-      const thumbWidth = leftThumbRef.current.offsetWidth;  // Get the width of the thumb
+      const thumbWidth = leftThumbRef.current.offsetWidth;
       const newMin = Math.round(Math.max(min, Math.min(max, minVal + (dx / trackWidth) * (max - min))));
-      if (newMin > maxVal) {
-        setMinVal(maxVal);
+      if (step) {
+        const steppedMin = Math.round(newMin / step) * step;
+        if (steppedMin > maxVal) {
+          setMinVal(maxVal);
+        }
+        else {
+          setMinVal(steppedMin);
+        }
       }
-      else {
-        setMinVal(newMin);
+      else{
+        if (newMin > maxVal) {
+          setMinVal(maxVal);
+        }
+        else {
+          setMinVal(newMin);
+        }
       }
 
       console.log(e.clientX);
@@ -236,7 +270,13 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
               {
                 setMaxVal(newMax); // Directly update the maxVal
               } */
-      setMaxVal(newMax); // Directly update the maxVal
+      if (step) {
+        const steppedMax = Math.round(newMax / step) * step;
+        setMaxVal(steppedMax);
+      }
+      else{
+        setMaxVal(maxVal);
+      }
 
       setStartXRight(e.clientX);
 
@@ -249,6 +289,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setIsDraggingLeftThumb(false);
+    setIsDraggingRightThumb(false);
     setShowLeftTooltip(false);
     setShowRightTooltip(false);
   };
@@ -265,22 +307,21 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
   };
 
   useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      if (isDragging) handleMouseMove(e);
+      if (isDraggingLeftThumb) handleMouseMoveLeftThumb(e);
+      if (isDraggingRightThumb) handleMouseMoveRightThumb(e);
+    };
+    
+
+    document.addEventListener('mousemove', handleDocumentMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mousemove', handleMouseMoveLeftThumb);
-    document.addEventListener('mouseup', handleMouseUpLeftThumb);
-    document.addEventListener('mousemove', handleMouseMoveRightThumb);
-    document.addEventListener('mouseup', handleMouseUpRightThumb);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mousemove', handleDocumentMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mousemove', handleMouseMoveLeftThumb);
-      document.removeEventListener('mouseup', handleMouseUpLeftThumb);
-      document.removeEventListener('mousemove', handleMouseMoveRightThumb);
-      document.removeEventListener('mouseup', handleMouseUpRightThumb);
     };
-  }, [handleMouseMove, handleMouseUp, handleMouseMoveLeftThumb, handleMouseUpLeftThumb, handleMouseMoveRightThumb, handleMouseUpRightThumb]);
+  }, [isDragging, isDraggingLeftThumb, isDraggingRightThumb]);
 
   return (
 
@@ -291,57 +332,13 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
           <div className='cont'>
 
             <div className="slider" ref={trackRef}>
-              {/*  <input
-            type="range"
-            min={min}
-            max={max}
-            value={minVal}
-            onMouseDown={()=>setIsDragging(false)}
-            onChange={(e) => 
-              {const val = Math.round(Number(e.target.value));
-                if(val >= maxVal)
-                {
-                  setMinVal(maxVal);
-                  setMaxVal(val);
-                }
-                else
-                {
-                  setMinVal(val);
-                }
-                console.log("min: " + minVal);
-                console.log("max: " + maxVal);
-
-              }
-            }
-            className="thumb thumb--left"
-          /> */}
-              <Thumb refs={{handleRef: leftThumbRef, tooltipRef: leftTooltipRef}} onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={minVal} showTooltip={showLeftTooltip}  />
-              {/* <input
-            type="range"
-            min={min}
-            max={max}
-            value={maxVal}
-            onChange={(e) => 
-              {const val = Math.round(Number(e.target.value));
-                if(val <= minVal)
-                {
-                  setMaxVal(minVal);
-                  setMinVal(val);
-                }
-                else
-                {
-                  setMaxVal(val);
-                }
-              }
-            }
-           className="thumb thumb--right"
-          />  */}
-              <Thumb  refs={{handleRef: rightThumbRef, tooltipRef: rightTooltipRef}} onMouseDown={handleMouseDownRightThumb} onMouseUp={handleMouseUpRightThumb} displayValue={maxVal} showTooltip={showRightTooltip} />
+              <Thumb refs={{ handleRef: leftThumbRef, tooltipRef: leftTooltipRef }} onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={minVal} showTooltip={showLeftTooltip} />
+              <Thumb refs={{ handleRef: rightThumbRef, tooltipRef: rightTooltipRef }} onMouseDown={handleMouseDownRightThumb} onMouseUp={handleMouseUpRightThumb} displayValue={maxVal} showTooltip={showRightTooltip} />
               <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
                   ref={rangeRef}
                   className="slider__range"
-                  style={{ cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: rangeColor || 'red' }}
+                  style={{ cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: rangeColor || 'blue' }}
                   onMouseDown={handleMouseDown}
                 ></div>
               </div>
@@ -351,14 +348,21 @@ export const Slider = ({ rangeColor, type = 'single', min, max }: SliderProps) =
           </div>
         )
           :
-          (<input
-            type="range"
-            min={min}
-            max={max}
-            step={30}
-            value={minVal}
-            onChange={(e) => setMinVal(Math.round(Number(e.target.value)))}
-          />)}
+          (<div className='cont'>
+            <div className="slider" ref={trackRef}>
+              <Thumb refs={{ handleRef: leftThumbRef, tooltipRef: leftTooltipRef }} onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={minVal} showTooltip={showLeftTooltip} />
+              <div className="slider__track" onMouseDown={handleMouseDownTrack}>
+                <div
+                  ref={rangeRef}
+                  className="slider__range"
+                  style={{ backgroundColor: rangeColor || 'blue' }}
+                  onMouseDown={handleMouseDown}
+                ></div>
+              </div>
+              <div className="slider__left-value">{Math.round(minVal)}</div>
+              <div className="slider__right-value">{Math.round(maxVal)}</div>
+            </div>
+          </div>)}
       </div>
     </>
 

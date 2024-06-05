@@ -22,11 +22,19 @@ export const Multi: Story = {
     type: 'multi',
     min: 100,
     max: 280,
-    rangeColor: 'blue'
+    rangeColor: 'blue',
+    step: 1,
   }
 
 };
 
 export const Single: Story = {
-  render: () => <Slider type='single' min={100} max={280} rangeColor='blue'/>  ,
+   args: {
+    type: 'single',
+    min: 100,
+    max: 280,
+    rangeColor: 'blue',
+    step: 1,
+  }
+
 };
