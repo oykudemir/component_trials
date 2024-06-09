@@ -18,13 +18,13 @@ interface SliderProps {
   think of min-max-step optimalizations
   sometimes dragging event prevents thumb movement
   add onchange as a prop to help view current value
-min max geçiş
-text highlight
-+ refs -> tooltip absolute
-controlled component
-custom renderers
-tests
-publish as npm package
+  + min max geçiş
+  text highlight
+  + refs -> tooltip absolute
+  controlled component
+  custom renderers
+  tests
+  publish as npm package
 */
 
 interface ThumbProps {
@@ -101,7 +101,9 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
   const trackRef = useRef<HTMLDivElement>(null);
   const [showLeftTooltip, setShowLeftTooltip] = useState(false);
   const [showRightTooltip, setShowRightTooltip] = useState(false);
-//  const [leftThumbVals, setLeftThumbVals] = useState([min, ]);
+  const [showIndexLeft, setShowIndexLeft] = useState(0);
+  const [showIndexRight, setShowIndexRight] = useState(1);
+
 
   const getPercent = useCallback((value: number) => ((value - min) / (max - min)) * 100, [min, max]);
 
@@ -121,19 +123,18 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
       }
     }
     if (leftThumbRef.current) {
-      leftThumbRef.current.style.left = `${getPercent(minVal)}%`;
+      leftThumbRef.current.style.left = `${minPercent}%`;
     }
     if (rightThumbRef.current) {
-      rightThumbRef.current.style.left = `${getPercent(maxVal)}%`;
+      rightThumbRef.current.style.left = `${maxPercent}%`;
     }
   };
 
   useEffect(() => {
     updateRangeStyle();
     setValues({min: minVal, max: maxVal});
-    console.log({min: minVal, max: maxVal})
-    console.log("min: " + minVal);
-    console.log("max" + maxVal);
+    console.log({min: minVal, max: maxVal});
+
   }, [minVal, maxVal]);
 
 
@@ -181,26 +182,19 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
       const trackWidth = trackRef.current.clientWidth;
       const newMin = Math.round(Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min)))));
       const newMax = newMin + (maxVal - minVal);
-        const steppedMin = Math.round(newMin / step) * step;
-        const steppedMax = Math.round(newMax / step) * step;
+      const steppedMin = Math.round(newMin / step) * step;
+      const steppedMax = Math.round(newMax / step) * step;
 
-        if (steppedMax <= max && steppedMin >= min) {
-          setMinVal(steppedMin);
-          setMaxVal(steppedMax);
-          setStartX(e.clientX);
-        }
-        if (steppedMax < steppedMin) {
-          setMinVal(steppedMax);
-          setMaxVal(steppedMin);
-          setStartX(e.clientX);
-        }
+      setMinVal(steppedMin);
+      setMaxVal(steppedMax);
+      setStartX(e.clientX);
      
     }
   };
 
   const handleMouseMoveLeftThumb = (e: MouseEvent) => {
     if (isDraggingLeftThumb && leftThumbRef.current && trackRef.current) {
-      console.log("you moved range with me")
+      console.log("you moved range with left")
 
       const dx = e.clientX - startXLeft;
       const trackWidth = trackRef.current.clientWidth;
@@ -208,33 +202,42 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
       const steppedMin = Math.round(newMin / step) * step;
       if (steppedMin > maxVal) {
         setMinVal(maxVal);
+        setShowIndexLeft(1);
+        setShowIndexRight(0);
+        setMaxVal(steppedMin);
       }
       else {
         setMinVal(steppedMin);
       }
 
-      console.log(e.clientX);
       console.log("new min:" + newMin);
       setStartXLeft(e.clientX);
       setShowLeftTooltip(true);
-
     }
   };
 
 
   const handleMouseMoveRightThumb = (e: MouseEvent) => {
     if (isDraggingRightThumb && rightThumbRef.current && trackRef.current) {
-      console.log("you moved range with me");
+      console.log("you moved range with right");
 
       const dx = e.clientX - startXRight;
       const trackWidth = trackRef.current.clientWidth;
-      const newMax = Math.round(Math.min(max, Math.max(minVal, maxVal + (dx / trackWidth) * (max - min))));
+      const newMax = Math.round(Math.min(max, Math.max(min, maxVal + (dx / trackWidth) * (max - min))));
       const steppedMax = Math.round(newMax / step) * step;
+
+      if (steppedMax <= minVal) {
+        setMaxVal(minVal);
+        setShowIndexLeft(showIndexLeft == 1 ? 0 : 1);
+        setShowIndexRight(showIndexRight == 1 ? 0 : 1);
+        setMinVal(steppedMax);
+      }
+      else {
+        console.log("sıctınrq ")
         setMaxVal(steppedMax);
 
+      }
       setStartXRight(e.clientX);
-
-      console.log(e.clientX);
       console.log("new max:" + newMax);
       setShowRightTooltip(true);
 
@@ -286,8 +289,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
           <div className='cont'>
 
             <div className="slider" ref={trackRef}>
-              <Thumb ref={leftThumbRef} onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={/* [minVal, max] */minVal} showTooltip={showLeftTooltip} />
-              <Thumb ref={rightThumbRef} onMouseDown={handleMouseDownRightThumb} onMouseUp={handleMouseUpRightThumb} displayValue={/*[ min, maxVal] */maxVal} showTooltip={showRightTooltip} />
+              <Thumb ref={showIndexLeft == 0 ? leftThumbRef : rightThumbRef} onMouseDown={showIndexLeft == 0 ? handleMouseDownLeftThumb : handleMouseDownRightThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={showIndexLeft == 0? minVal : maxVal} showTooltip={showIndexLeft == 0 ? showLeftTooltip : showRightTooltip} />
+              <Thumb ref={showIndexRight == 0 ? leftThumbRef : rightThumbRef} onMouseDown={showIndexRight == 0 ? handleMouseDownLeftThumb : handleMouseDownRightThumb} onMouseUp={handleMouseUpRightThumb} displayValue={showIndexRight == 0? minVal : maxVal} showTooltip={showIndexRight == 0 ? showLeftTooltip : showRightTooltip} />
               <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
                   ref={rangeRef}
@@ -304,8 +307,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, defaul
           :
           (<div className='cont'>
             <div className="slider" ref={trackRef}>
-              <Thumb onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={minVal} showTooltip={showLeftTooltip} />
-              <div className="slider__track" onMouseDown={handleMouseDownTrack}>
+            <Thumb ref={showIndexLeft == 0 ? leftThumbRef : rightThumbRef} onMouseDown={showIndexLeft == 0 ? handleMouseDownLeftThumb : handleMouseDownRightThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={showIndexLeft == 0? minVal : maxVal} showTooltip={showIndexLeft == 0 ? showLeftTooltip : showRightTooltip} />
+            <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
                   ref={rangeRef}
                   className="slider__range"
