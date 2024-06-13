@@ -158,7 +158,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
       const trackWidth = trackRef.current.clientWidth;
       const newMin = Math.round(Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min)))));
       const newMax = newMin + (maxVal - minVal);
-      const steppedMin = min + Math.round((newMax - min) / step) * step > max ?(min + Math.round((newMin - min - step) / step) * step) : (min + Math.round((newMin - min) / step) * step);
+      const steppedMin = ((max - (min + Math.round((newMax - min) / step) * step) )< step) ? (minVal):(min + Math.round((newMax - min) / step) * step > max ?(min + Math.round((newMin - min - step) / step) * step) :
+      (min + Math.round((newMin - min) / step) * step));
       const steppedMax = min + Math.round((newMax - min) / step) * step > max ?(min + Math.round((newMax - min - step) / step) * step) : (min + Math.round((newMax - min) / step) * step);
       console.log("stepped min:" + steppedMin)
 
@@ -190,7 +191,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
       const dx = e.clientX - startXLeft;
       const trackWidth = trackRef.current.clientWidth;
       const newVal = Math.round(Math.max(min, Math.min(max, thumbOneVal + (dx / trackWidth) * (max - min))));
-      const steppedVal = min + Math.floor((newVal - min) / step) * step; 
+      const steppedVal = (max - (min + Math.floor((newVal - min) / step) * step) < step ? newVal : min + Math.floor((newVal - min) / step) * step); 
       
       setThumbOneVal(steppedVal);
       setStartXLeft(e.clientX);
@@ -213,7 +214,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
       const dx = e.clientX - startXRight;
       const trackWidth = trackRef.current.clientWidth;
       const newVal = Math.round(Math.max(min, Math.min(max, thumbTwoVal + (dx / trackWidth) * (max - min))));
-      const steppedVal = min + Math.floor((newVal - min) / step) * step; 
+      const steppedVal = (max - (min + Math.floor((newVal - min) / step) * step) < step ? newVal : min + Math.floor((newVal - min) / step) * step); 
       setThumbTwoVal(steppedVal);
       setStartXRight(e.clientX);
       if(steppedVal > thumbOneVal)
@@ -287,8 +288,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
                   onMouseDown={handleMouseDown}
                 ></div>
               </div>
-              <div className="slider__left-value">{Math.round(minVal)}</div>
-              <div className="slider__right-value">{Math.round(maxVal)}</div>
+              <div className="slider__left-value">{Math.round(min)}</div>
+              <div className="slider__right-value">{Math.round(max)}</div>
             </div>
           </div>
         )
