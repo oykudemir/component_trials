@@ -3,7 +3,7 @@ import Slider from '../components/Slider'
 
 const Home = () => {
 
-  const [val, setVal] = useState({min: 310, max: 340});
+  const [val, setVal] = useState({min: 319, max: 340});
 
   const handleValueChange = (newVal: {min: number, max:number}) => {
     setVal(newVal);
