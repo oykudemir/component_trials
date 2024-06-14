@@ -50,6 +50,7 @@ export const Thumb = forwardRef<HTMLDivElement, ThumbProps>((props, ref) => {
 
   const [showTooltip, setShowToolTip] = useState(false);
 
+
   return (
     <div style={{ position: 'relative', transform: 'none' }} ref={ref}>
       <Handle onMouseDown={(e) => { props.onMouseDown(e); setShowToolTip(true) }} onMouseUp={(e) => { props.onMouseUp(e); setShowToolTip(false) }} />
@@ -77,18 +78,14 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
 
   const [minVal, setMinVal] = useState(min + Math.round((value.min - min) / step) * step);
   const [maxVal, setMaxVal] = useState(min + Math.round((value.max - min) / step) * step);
-
   const [isDragging, setIsDragging] = useState(false);
-
   const [thumbOneVal, setThumbOneVal] = useState(min + Math.round((value.min - min) / step) * step);
   const [thumbTwoVal, setThumbTwoVal] = useState(min + Math.round((value.max - min) / step) * step);
-
   const [isDraggingThumbOne, setIsDraggingThumbOne] = useState(false);
   const [isDraggingThumbTwo, setIsDraggingThumbTwo] = useState(false);
-
   const [startX, setStartX] = useState(0);
-  const [startXLeft, setStartXLeft] = useState(0);
-  const [startXRight, setStartXRight] = useState(0);
+  const [startXOne, setStartXOne] = useState(0);
+  const [startXTwo, setStartXTwo] = useState(0);
   const rangeRef = useRef<HTMLDivElement>(null);
   const thumbOneRef = useRef<HTMLDivElement>(null);
   const thumbTwoRef = useRef<HTMLDivElement>(null);
@@ -116,7 +113,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
     }
     if (thumbTwoRef.current) {
       thumbTwoRef.current.style.left = `${getPercent(thumbTwoVal)}%`;
-    } 
+    }
   };
 
   useEffect(() => {
@@ -132,47 +129,51 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+
     setIsDragging(!isDragging);
     setStartX(e.clientX);
     console.log("you clicked range");
   };
 
-  const handleMouseDownLeftThumb = (e: React.MouseEvent) => {
+  const handleMouseDownFirstThumb = (e: React.MouseEvent) => {
+    e.preventDefault();
+
     setIsDraggingThumbOne(true);
-    setStartXLeft(e.clientX);
+    setStartXOne(e.clientX);
     console.log("you clicked left thumb")
   };
 
-  const handleMouseDownRightThumb = (e: React.MouseEvent) => {
+  const handleMouseDownSecondThumb = (e: React.MouseEvent) => {
+    e.preventDefault();
+
     setIsDraggingThumbTwo(true);
-    setStartXRight(e.clientX);
+    setStartXTwo(e.clientX);
     console.log("you clicked right thumb")
   };
 
   const handleMouseMove = (e: MouseEvent) => {
+    e.preventDefault();
+
     if (isDragging && rangeRef.current && trackRef.current) {
       console.log("you moved range")
 
       const dx = e.clientX - startX;
-      console.log("startx" + startX)
       const trackWidth = trackRef.current.clientWidth;
       const newMin = Math.round(Math.max(min, Math.min(max - (maxVal - minVal), minVal + (dx / trackWidth * (max - min)))));
-      const newMax = newMin + (maxVal - minVal);
-      const steppedMin = ((max - (min + Math.round((newMax - min) / step) * step) )< step) ? (minVal):(min + Math.round((newMax - min) / step) * step > max ?(min + Math.round((newMin - min - step) / step) * step) :
-      (min + Math.round((newMin - min) / step) * step));
-      const steppedMax = min + Math.round((newMax - min) / step) * step > max ?(min + Math.round((newMax - min - step) / step) * step) : (min + Math.round((newMax - min) / step) * step);
-      console.log("stepped min:" + steppedMin)
+      const newMax = newMin + ((maxVal > (min + Math.floor((max - min) / step) * step) ? (min + Math.floor((max - min) / step) * step) : maxVal) - minVal);
+      const steppedMin = (min + Math.round((newMax - min) / step) * step > max ? (min + Math.round((newMin - min - step) / step) * step) :
+        (min + Math.round((newMin - min) / step) * step));
+      const steppedMax = min + Math.round((newMax - min) / step) * step > max ? (min + Math.round((newMax - min - step) / step) * step) : (min + Math.round((newMax - min) / step) * step);
 
-      if(thumbOneVal > thumbTwoVal)
-      {
+      if (thumbOneVal > thumbTwoVal) {
         setThumbOneVal(steppedMax);
         setThumbTwoVal(steppedMin);
         setMinVal(steppedMin);
-        setMaxVal(steppedMax);    
+        setMaxVal(steppedMax);
         onChange({ min: steppedMin, max: steppedMax });
       }
-      else
-      {
+      else {
         setThumbOneVal(steppedMin);
         setThumbTwoVal(steppedMax);
         setMinVal(steppedMin);
@@ -185,24 +186,24 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
   };
 
   const handleMouseMoveThumb = (e: MouseEvent, thumbNo: number) => {
+    e.preventDefault();
+
     if (thumbNo == 1 && isDraggingThumbOne && thumbOneRef.current && trackRef.current) {
       console.log("you moved range with one")
 
-      const dx = e.clientX - startXLeft;
+      const dx = e.clientX - startXOne;
       const trackWidth = trackRef.current.clientWidth;
       const newVal = Math.round(Math.max(min, Math.min(max, thumbOneVal + (dx / trackWidth) * (max - min))));
-      const steppedVal = (max - (min + Math.floor((newVal - min) / step) * step) < step ? newVal : min + Math.floor((newVal - min) / step) * step); 
-      
+      const steppedVal = (max - (min + Math.floor((newVal - min) / step) * step) < step ? newVal : min + Math.floor((newVal - min) / step) * step);
+
       setThumbOneVal(steppedVal);
-      setStartXLeft(e.clientX);
-      if(steppedVal > thumbTwoVal)
-      {
+      setStartXOne(e.clientX);
+      if (steppedVal > thumbTwoVal) {
         setMinVal(thumbTwoVal);
-        setMaxVal(steppedVal);    
+        setMaxVal(steppedVal);
         onChange({ min: thumbTwoVal, max: steppedVal });
       }
-      else
-      {
+      else {
         setMinVal(steppedVal);
         setMaxVal(thumbTwoVal);
         onChange({ min: steppedVal, max: thumbTwoVal });
@@ -211,26 +212,24 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
     else if (thumbNo == 2 && isDraggingThumbTwo && thumbTwoRef.current && trackRef.current) {
       console.log("you moved range with two")
 
-      const dx = e.clientX - startXRight;
+      const dx = e.clientX - startXTwo;
       const trackWidth = trackRef.current.clientWidth;
       const newVal = Math.round(Math.max(min, Math.min(max, thumbTwoVal + (dx / trackWidth) * (max - min))));
-      const steppedVal = (max - (min + Math.floor((newVal - min) / step) * step) < step ? newVal : min + Math.floor((newVal - min) / step) * step); 
+      const steppedVal = (max - (min + Math.floor((newVal - min) / step) * step) < step ? newVal : min + Math.floor((newVal - min) / step) * step);
       setThumbTwoVal(steppedVal);
-      setStartXRight(e.clientX);
-      if(steppedVal > thumbOneVal)
-      {
+      setStartXTwo(e.clientX);
+      if (steppedVal > thumbOneVal) {
         setMinVal(thumbOneVal);
-        setMaxVal(steppedVal);    
+        setMaxVal(steppedVal);
         onChange({ min: thumbOneVal, max: steppedVal });
       }
-      else
-      {
+      else {
         setMinVal(steppedVal);
         setMaxVal(thumbOneVal);
         onChange({ min: steppedVal, max: thumbOneVal });
       }
     }
-    
+
   };
 
   const handleMouseUp = () => {
@@ -244,7 +243,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
   };
 
 
-  const handleMouseUpRightThumb = () => {
+  const handleMouseUpSecondThumb = () => {
     setIsDraggingThumbTwo(false);
   };
 
@@ -274,11 +273,11 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
           <div className='cont'>
 
             <div className="slider" ref={trackRef}>
-              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownLeftThumb}
+              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb}
                 onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal}
               />
-              <Thumb ref={thumbTwoRef} onMouseDown={handleMouseDownRightThumb}
-                onMouseUp={handleMouseUpRightThumb} displayValue={thumbTwoVal}
+              <Thumb ref={thumbTwoRef} onMouseDown={handleMouseDownSecondThumb}
+                onMouseUp={handleMouseUpSecondThumb} displayValue={thumbTwoVal}
               />
               <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
@@ -296,7 +295,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
           :
           (<div className='cont'>
             <div className="slider" ref={trackRef}>
-              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownLeftThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal} />
+              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal} />
               <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
                   ref={rangeRef}
