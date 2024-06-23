@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback, forwardRef } from 'react'
+import React, { useState, useRef, useEffect, useCallback, forwardRef, Dispatch, SetStateAction } from 'react'
 import styled from 'styled-components';
 
 interface ThumbProps {
   onMouseDown: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   onMouseUp: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   displayValue: number;
+  showTooltip: boolean;
+  setShowTooltip: Dispatch<SetStateAction<boolean>>;
 }
 
 const Handle = styled.div`
@@ -48,13 +50,13 @@ const Tooltip = styled.div`
 
 export const Thumb = forwardRef<HTMLDivElement, ThumbProps>((props, ref) => {
 
-  const [showTooltip, setShowToolTip] = useState(false);
+  //const [showTooltip, setShowToolTip] = useState(false);
 
 
   return (
     <div style={{ position: 'relative', transform: 'none' }} ref={ref}>
-      <Handle onMouseDown={(e) => { props.onMouseDown(e); setShowToolTip(true) }} onMouseUp={(e) => { props.onMouseUp(e); setShowToolTip(false) }} />
-      <Tooltip style={{ visibility: showTooltip ? 'visible' : 'hidden' }} >
+      <Handle onMouseDown={(e) => { props.onMouseDown(e); props.setShowTooltip(true) }} onMouseUp={(e) => { props.onMouseUp(e); props.setShowTooltip(false) }} />
+      <Tooltip style={{ visibility: props.showTooltip ? 'visible' : 'hidden' }} >
         {props.displayValue}
       </Tooltip>
     </div>
@@ -90,6 +92,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
   const thumbOneRef = useRef<HTMLDivElement>(null);
   const thumbTwoRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const [showTooltipOne, setShowTooltipOne] = useState(false);
+  const [showTooltipTwo, setShowTooltipTwo] = useState(false);
 
   const getPercent = useCallback((value: number) => ((value - min) / (max - min)) * 100, [min, max]);
 
@@ -130,7 +134,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-
+    setShowTooltipOne(true);
+    setShowTooltipTwo(true);
     setIsDragging(!isDragging);
     setStartX(e.clientX);
     console.log("you clicked range");
@@ -157,6 +162,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
 
     if (isDragging && rangeRef.current && trackRef.current) {
       console.log("you moved range")
+      setShowTooltipOne(true);
+      setShowTooltipTwo(true);
 
       const dx = e.clientX - startX;
       const trackWidth = trackRef.current.clientWidth;
@@ -190,6 +197,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
 
     if (thumbNo == 1 && isDraggingThumbOne && thumbOneRef.current && trackRef.current) {
       console.log("you moved range with one")
+      setShowTooltipOne(true);
 
       const dx = e.clientX - startXOne;
       const trackWidth = trackRef.current.clientWidth;
@@ -211,6 +219,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
     }
     else if (thumbNo == 2 && isDraggingThumbTwo && thumbTwoRef.current && trackRef.current) {
       console.log("you moved range with two")
+      setShowTooltipTwo(true);
 
       const dx = e.clientX - startXTwo;
       const trackWidth = trackRef.current.clientWidth;
@@ -234,6 +243,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setShowTooltipOne(false);
+    setShowTooltipTwo(false);
     setIsDraggingThumbOne(false);
     setIsDraggingThumbTwo(false);
   };
@@ -275,9 +286,11 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
             <div className="slider" ref={trackRef}>
               <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb}
                 onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal}
+                showTooltip={showTooltipOne} setShowTooltip={setShowTooltipOne}
               />
               <Thumb ref={thumbTwoRef} onMouseDown={handleMouseDownSecondThumb}
                 onMouseUp={handleMouseUpSecondThumb} displayValue={thumbTwoVal}
+                showTooltip={showTooltipTwo} setShowTooltip={setShowTooltipTwo}
               />
               <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
@@ -295,7 +308,8 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
           :
           (<div className='cont'>
             <div className="slider" ref={trackRef}>
-              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal} />
+              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal} 
+              showTooltip={showTooltipOne} setShowTooltip={setShowTooltipOne}/>
               <div className="slider__track" onMouseDown={handleMouseDownTrack}>
                 <div
                   ref={rangeRef}
