@@ -1,4 +1,4 @@
-import Home from './screens/Home'
+import Home from './components/slider/demo/multiRange'
 
 function App() {
 
