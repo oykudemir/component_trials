@@ -10,11 +10,9 @@ const Home = () => {
     console.log("min=" + newVal.min +" max=" + newVal.max);
   }
 
-
-
   return (
     <div style={{display: 'flex', justifyContent: 'center', height:'100vh', alignItems:'center'}}>
-        <Slider type='multi' min={300} max={395} rangeColor='blue' step={7} value={val} onChange={handleValueChange}/>
+      <Slider type='single' min={300} max={395} rangeColor='blue' step={7} value={val} onChange={handleValueChange}/>
     </div>
   )
 }

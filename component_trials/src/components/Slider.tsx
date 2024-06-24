@@ -7,9 +7,11 @@ interface ThumbProps {
   displayValue: number;
   showTooltip: boolean;
   setShowTooltip: Dispatch<SetStateAction<boolean>>;
+  handleRenderer?: React.ComponentType;
+  tooltipRenderer?: React.ComponentType;
 }
 
-const Handle = styled.div`
+const DefaultHandle = styled.div`
   position: absolute;
   margin-top: 2px;
   transform: translate(-50%, -50%);
@@ -17,24 +19,18 @@ const Handle = styled.div`
   border: none;
   border-radius: 50%;
   box-shadow: 0 0 1px 1px #ced4da;
-  cursor: pointer;
   height: 18px;
   width: 18px;
   z-index: 3;
   margin-left: -1px;
 `;
 
-const Tooltip = styled.div`
-  position: absolute;
-  bottom: 20px;
-  transform: translate(-50%, -50%);
+const DefaultTooltip = styled.div`
   background-color: black;
-  color: white;
-  padding: 5px;
+  padding: 10px;
   border-radius: 3px;
   font-size: 12px;
   white-space: nowrap;
-  visibility: hidden;
   box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
   &::after {
     content: '';
@@ -48,17 +44,63 @@ const Tooltip = styled.div`
   }
 `;
 
+const SliderContainer = styled.div`
+  position: relative;
+  width: 200px;
+  display: flex;
+  flex-direction: row;
+`;
+
+const SliderTrack = styled.div`
+  border-radius: 3px;
+  height: 5px;
+  position: absolute;
+  background-color: #ced4da;
+  width: 100%;
+  z-index: 1;
+`;
+
+const SliderRange = styled.div`
+  position: absolute;
+  background-color: black;
+  z-index: 2;
+  border-radius: 3px;
+  height: 5px;
+  &::hover {
+  cursor: pointer;
+  }
+
+`;
+
+
+
 export const Thumb = forwardRef<HTMLDivElement, ThumbProps>((props, ref) => {
 
-  //const [showTooltip, setShowToolTip] = useState(false);
-
+  const Handle = props.handleRenderer || DefaultHandle;
+  const Tooltip =  props.tooltipRenderer || DefaultTooltip;
 
   return (
     <div style={{ position: 'relative', transform: 'none' }} ref={ref}>
-      <Handle onMouseDown={(e) => { props.onMouseDown(e); props.setShowTooltip(true) }} onMouseUp={(e) => { props.onMouseUp(e); props.setShowTooltip(false) }} />
-      <Tooltip style={{ visibility: props.showTooltip ? 'visible' : 'hidden' }} >
-        {props.displayValue}
-      </Tooltip>
+      <div style={{ position: 'absolute', transform: 'translate(-50%, -50%)',  cursor: 'pointer', zIndex: 3, marginLeft:'-1px'}} 
+      onMouseDown={(e) => {props.onMouseDown(e); props.setShowTooltip(true) }} onMouseUp={(e) => { props.onMouseUp(e); props.setShowTooltip(false) }}>
+        <Handle/>
+      </div>
+      <div style={{ position: 'absolute', display: 'inline-block', bottom: '20px', transform: 'translate(-50%, -50%)', visibility: props.showTooltip ? 'visible' : 'hidden' }}>
+        <div style={{ width: '20px', height: '20px', }}>
+          <Tooltip/>
+        </div>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          fontSize: '10px',
+          transform: 'translate(-50%, -50%)',
+          userSelect: 'none',
+          color:'white'
+        }}>
+          <p>{props.displayValue}</p>
+        </div>
+      </div>
     </div>
   )
 });
@@ -74,9 +116,11 @@ interface SliderProps {
     max: number;
   }
   onChange: (newValue: { min: number; max: number }) => void;
+  handleRenderer?: React.ComponentType;
+  tooltipRenderer?: React.ComponentType;
 }
 
-export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value = { min: min, max: max }, onChange }: SliderProps) => {
+export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value = { min: min, max: max }, onChange, handleRenderer, tooltipRenderer}: SliderProps) => {
 
   const [minVal, setMinVal] = useState(min + Math.round((value.min - min) / step) * step);
   const [maxVal, setMaxVal] = useState(min + Math.round((value.max - min) / step) * step);
@@ -249,13 +293,17 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
     setIsDraggingThumbTwo(false);
   };
 
-  const handleMouseUpLeftThumb = () => {
+  const handleMouseUpFirstThumb = () => {
     setIsDraggingThumbOne(false);
+    setShowTooltipOne(false);
+
   };
 
 
   const handleMouseUpSecondThumb = () => {
     setIsDraggingThumbTwo(false);
+    setShowTooltipTwo(false);
+
   };
 
   useEffect(() => {
@@ -276,51 +324,48 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
   }, [isDragging, isDraggingThumbOne, isDraggingThumbTwo]);
 
   return (
-
-
     <>
-      <div className="slider-container">
+      <div>
         {type === 'multi' ? (
-          <div className='cont'>
+          <div>
 
-            <div className="slider" ref={trackRef}>
+            <SliderContainer ref={trackRef}>
               <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb}
-                onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal}
+                onMouseUp={handleMouseUpFirstThumb} displayValue={thumbOneVal}
                 showTooltip={showTooltipOne} setShowTooltip={setShowTooltipOne}
+                handleRenderer={handleRenderer} tooltipRenderer={tooltipRenderer}
               />
               <Thumb ref={thumbTwoRef} onMouseDown={handleMouseDownSecondThumb}
                 onMouseUp={handleMouseUpSecondThumb} displayValue={thumbTwoVal}
                 showTooltip={showTooltipTwo} setShowTooltip={setShowTooltipTwo}
+                handleRenderer={handleRenderer} tooltipRenderer={tooltipRenderer}
               />
-              <div className="slider__track" onMouseDown={handleMouseDownTrack}>
-                <div
+              <SliderTrack onMouseDown={handleMouseDownTrack}>
+                <SliderRange
                   ref={rangeRef}
-                  className="slider__range"
                   style={{ cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: rangeColor || 'blue' }}
                   onMouseDown={handleMouseDown}
-                ></div>
-              </div>
-              <div className="slider__left-value">{Math.round(min)}</div>
-              <div className="slider__right-value">{Math.round(max)}</div>
-            </div>
+                ></SliderRange>
+              </SliderTrack>
+              <div style={{ position:'absolute', fontSize: '12px', marginTop: '20px', userSelect: 'none'}}>{Math.round(min)}</div>
+              <div style={{ position:'absolute', fontSize: '12px', marginTop: '20px', right: '0px', userSelect: 'none'}}>{Math.round(max)}</div>
+            </SliderContainer>
           </div>
         )
           :
-          (<div className='cont'>
-            <div className="slider" ref={trackRef}>
-              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb} onMouseUp={handleMouseUpLeftThumb} displayValue={thumbOneVal} 
+          (<div>
+            <SliderContainer ref={trackRef}>
+              <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb} onMouseUp={handleMouseUpFirstThumb} displayValue={thumbOneVal} 
               showTooltip={showTooltipOne} setShowTooltip={setShowTooltipOne}/>
-              <div className="slider__track" onMouseDown={handleMouseDownTrack}>
-                <div
+              <SliderTrack>
+                <SliderRange
                   ref={rangeRef}
-                  className="slider__range"
                   style={{ backgroundColor: rangeColor || 'blue' }}
-                  onMouseDown={handleMouseDown}
-                ></div>
-              </div>
-              <div className="slider__left-value">{Math.round(minVal)}</div>
-              <div className="slider__right-value">{Math.round(maxVal)}</div>
-            </div>
+                ></SliderRange>
+              </SliderTrack>
+              <div style={{ position:'absolute', fontSize: '12px', marginTop: '20px', userSelect: 'none'}}>{Math.round(min)}</div>
+              <div style={{ position:'absolute', fontSize: '12px', marginTop: '20px', right: '0px', userSelect: 'none'}}>{Math.round(max)}</div>
+            </SliderContainer>
           </div>)}
       </div>
     </>
