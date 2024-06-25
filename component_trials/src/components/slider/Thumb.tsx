@@ -22,7 +22,6 @@ const DefaultHandle = styled.div`
   height: 18px;
   width: 18px;
   z-index: 3;
-  margin-left: -1px;
 `;
 
 const DefaultTooltip = styled.div`
@@ -37,7 +36,7 @@ const DefaultTooltip = styled.div`
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border-width: 8px;
+    border-width: 4px;
     border-style: solid;
     border-color: black transparent transparent transparent;
   }
@@ -51,25 +50,27 @@ export const Thumb = forwardRef<HTMLDivElement, ThumbProps>(({
   
     return (
       <div style={{ position: 'relative', transform: 'none' }} ref={ref}>
-        <div style={{ position: 'absolute', transform: 'translate(-50%, -50%)', cursor: 'pointer', zIndex: 3, marginLeft: '-1px' }}
+        <div style={{ position: 'absolute', transform: 'translate(-50%, -50%)', cursor: 'pointer', zIndex: 3 }}
           onMouseDown={(e) => { onMouseDown(e); setShowTooltip(true) }} onMouseUp={(e) => { onMouseUp(e); setShowTooltip(false) }}>
           <HandleRenderer/>
         </div>
-        <div style={{ position: 'absolute', display: 'inline-block', bottom: '20px', transform: 'translate(-50%, -50%)', visibility: showTooltip ? 'visible' : 'hidden' }}>
-          <div style={{ width: '24px', height: '24px', }}>
+        <div style={{ position: 'absolute', display: 'inline-block', bottom: '20px',  transform: 'translateX(-50%)', visibility: showTooltip ? 'visible' : 'visible' }}>
+          <div style={{ width: '24px', height: '24px'}}>
             <TooltipRenderer/>
           </div>
           <div style={{
             height: '100%',
             position: 'absolute',
             top: '0%',
-            left: '50%',
-            fontSize: '16px',
-            transform: 'translate(-50%, -50%)',
+            width: '100%', 
+            fontSize: '12px',
+            textAlign: 'center',
+            marginTop: '3px',
             userSelect: 'none',
             color: 'white',
+            zIndex: '1' // Ensure it is above the TooltipRenderer in the stacking context
           }}>
-            <p>{displayValue}</p>
+            {displayValue}
           </div>
         </div>
       </div>

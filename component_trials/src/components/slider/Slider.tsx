@@ -47,7 +47,8 @@ interface SliderProps {
 
 }
 
-export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value = { min: min, max: max }, onChange, HandleRenderer, TooltipRenderer, style }: SliderProps) => {
+export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value = { min: min, max: max }, onChange, 
+HandleRenderer, TooltipRenderer, style }: SliderProps) => {
 
   const [minVal, setMinVal] = useState(min + Math.round((value.min - min) / step) * step);
   const [maxVal, setMaxVal] = useState(min + Math.round((value.max - min) / step) * step);
@@ -283,7 +284,7 @@ export const Slider = ({ rangeColor, type = 'single', min, max, step = 1, value 
           (<div>
             <SliderContainer style={style} ref={trackRef}>
               <Thumb ref={thumbOneRef} onMouseDown={handleMouseDownFirstThumb} onMouseUp={handleMouseUpFirstThumb} displayValue={thumbOneVal}
-                showTooltip={showTooltipOne} setShowTooltip={setShowTooltipOne} />
+                showTooltip={showTooltipOne} setShowTooltip={setShowTooltipOne}  HandleRenderer={HandleRenderer} TooltipRenderer={TooltipRenderer}/>
               <SliderTrack>
                 <SliderRange
                   ref={rangeRef}

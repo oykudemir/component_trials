@@ -29,7 +29,7 @@ const Home = () => {
 
   return (
     <div style={{display: 'flex', justifyContent: 'center', height:'100vh', alignItems:'center'}}>
-      <Slider type='single' min={300} max={395} rangeColor='blue' step={7} value={val} onChange={handleValueChange} TooltipRenderer={MyIcon}/>
+      <Slider type='single' min={300} max={395} rangeColor='blue' step={7} value={val} onChange={handleValueChange}/>
     </div>
   )
 }
