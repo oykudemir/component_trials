@@ -54,7 +54,7 @@ export const Thumb = forwardRef<HTMLDivElement, ThumbProps>(({
           onMouseDown={(e) => { onMouseDown(e); setShowTooltip(true) }} onMouseUp={(e) => { onMouseUp(e); setShowTooltip(false) }}>
           <HandleRenderer/>
         </div>
-        <div style={{ position: 'absolute', display: 'inline-block', bottom: '20px',  transform: 'translateX(-50%)', visibility: showTooltip ? 'visible' : 'visible' }}>
+        <div style={{ position: 'absolute', display: 'inline-block', bottom: '20px',  transform: 'translateX(-50%)', visibility: showTooltip ? 'visible' : 'hidden' }}>
           <div style={{ width: '24px', height: '24px'}}>
             <TooltipRenderer/>
           </div>
