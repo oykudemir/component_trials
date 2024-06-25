@@ -14,10 +14,9 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "declaration": true,
+    "noFallthroughCasesInSwitch": true,  
+    "typeRoots": ["./dist/index.d.ts", "node_modules/@types"],
   },
-  "typeRoots": ["./dist/index.d.ts", "node_modules/@types"],
-  "include": ["src", "./components/slider/index.ts"],
+  "include": ["src", "src/index.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
